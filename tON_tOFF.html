@@ -1,0 +1,478 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>t ON t OFF</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@200;300;500&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout : un seul écran. Deux grands temps empilés (t1 en haut, t2 en bas),
+     réglages au milieu, bouton plat pleine largeur tout en bas. */
+  :root {
+    --bg: #0c0e11;
+    --fg: #f1eee8;
+    --muted: #8a919b;
+    --line: #262b32;
+    --sel: rgba(255, 255, 255, 0.07);
+    --warm: #ff9f43;
+    --cool: #4cc9f0;
+    --btn-bg: #f1eee8;
+    --btn-fg: #0c0e11;
+    --sheet: #171a1f;
+    --scrim: rgba(0, 0, 0, 0.55);
+    --blur: none;
+    --display: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', system-ui, sans-serif;
+    --body: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --gl: max(16px, env(safe-area-inset-left, 0px));
+    --gr: max(16px, env(safe-area-inset-right, 0px));
+    color-scheme: dark;
+  }
+  :root[data-skin="clair"] {
+    --bg: #f3f2ee;
+    --fg: #16181b;
+    --muted: #666c75;
+    --line: #d9d7d0;
+    --sel: rgba(0, 0, 0, 0.06);
+    --warm: #c75f00;
+    --cool: #0a7ba0;
+    --btn-bg: #16181b;
+    --btn-fg: #f3f2ee;
+    --sheet: #ffffff;
+    --scrim: rgba(20, 20, 20, 0.35);
+    color-scheme: light;
+  }
+  :root[data-skin="verre"] {
+    --bg: radial-gradient(60% 38% at 18% 12%, rgba(255, 150, 95, 0.5), transparent 70%),
+          radial-gradient(55% 40% at 88% 68%, rgba(70, 200, 255, 0.42), transparent 70%),
+          linear-gradient(165deg, #101a35, #2a1648 55%, #0c3a40);
+    --fg: #ffffff;
+    --muted: rgba(255, 255, 255, 0.72);
+    --line: rgba(255, 255, 255, 0.24);
+    --sel: rgba(255, 255, 255, 0.16);
+    --warm: #ffc27a;
+    --cool: #8fe3ff;
+    --btn-bg: rgba(255, 255, 255, 0.92);
+    --btn-fg: #10202e;
+    --sheet: rgba(34, 40, 70, 0.55);
+    --scrim: rgba(5, 10, 25, 0.4);
+    --blur: blur(22px) saturate(1.3);
+    color-scheme: dark;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--body);
+    padding-left: var(--gl);
+    padding-right: var(--gr);
+    padding-block: 0;
+    overflow-x: hidden;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+  .app { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 10px 8px; }
+  .brand { margin: 0; font: 500 24px/1 var(--display); letter-spacing: 0.05em; white-space: nowrap; }
+  .brand .t { color: var(--muted); font-weight: 300; }
+  .skins { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .skins button, .modes button {
+    background: transparent; border: 0; color: var(--muted); font-size: 12px; font-weight: 500; padding: 7px 10px;
+  }
+  .skins button[aria-pressed="true"], .modes button[aria-pressed="true"] { background: var(--sel); color: var(--fg); }
+
+  .block { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; border-top: 1px solid var(--line); }
+  .b1 { --c: var(--cool); }
+  .b2 { --c: var(--warm); }
+  .timebtn {
+    display: block; width: 100%; background: none; border: 0; padding: 6px 0; text-align: center; color: var(--fg);
+    transition: opacity 0.2s;
+  }
+  .timebtn:disabled { cursor: default; color: var(--fg); }
+  .label { display: block; font: 600 13px/1.2 var(--body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--c); }
+  .time {
+    display: block; font-family: var(--display); font-weight: 200; font-size: min(38vw, 18vh); line-height: 1;
+    font-variant-numeric: tabular-nums; white-space: nowrap; margin-block: 2px;
+  }
+  .hint { display: block; font-size: 12px; color: var(--muted); }
+  .bar { height: 3px; background: var(--line); width: min(72%, 320px); margin: 8px auto 0; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--c); }
+  .running .hint { visibility: hidden; }
+  .running .block:not(.live) .timebtn { opacity: 0.35; }
+
+  .meta { display: flex; flex-direction: column; gap: 10px; padding-block: 12px; border-top: 1px solid var(--line); }
+  .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+  .total { display: flex; align-items: baseline; gap: 10px; background: none; border: 0; padding: 4px 0; }
+  .total:disabled { cursor: default; color: var(--fg); }
+  .total .k { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .total .v { font: 500 30px/1 var(--display); font-variant-numeric: tabular-nums; }
+  .remain { font: 300 24px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--muted); }
+  .remain b { font-weight: 500; color: var(--fg); }
+  .modes { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .note { margin: 0; min-height: 2.6em; font-size: 12px; line-height: 1.35; color: var(--muted); }
+
+  .go {
+    margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr));
+    height: 76px; border: 0; border-radius: 0; background: var(--btn-bg); color: var(--btn-fg);
+    font: 600 18px var(--body); letter-spacing: 0.24em; padding-inline: var(--gl) var(--gr);
+  }
+  .go:focus-visible { outline-offset: -6px; outline-color: var(--btn-fg); }
+
+  .scrim { position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
+  .sheet {
+    width: 100%; max-width: 560px; background: var(--sheet); border: 1px solid var(--line); border-bottom: 0;
+    border-radius: 18px 18px 0 0; padding: 18px var(--gr) calc(16px + env(safe-area-inset-bottom, 0px)) var(--gl);
+    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  }
+  .sheet h2 { margin: 0; font: 500 30px/1.1 var(--display); letter-spacing: 0.04em; color: var(--c, var(--fg)); }
+  .sheet p { margin: 2px 0 10px; font-size: 13px; color: var(--muted); }
+  .wheels { position: relative; display: flex; justify-content: center; gap: 28px; height: 200px; }
+  .wheels::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 80px; height: 40px; pointer-events: none;
+    background: var(--sel); border-block: 1px solid var(--line);
+  }
+  .col { display: flex; align-items: center; gap: 8px; position: relative; }
+  .wheel {
+    width: 72px; height: 200px; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+  }
+  .wheel::-webkit-scrollbar { display: none; }
+  .wheel .pad { height: 80px; }
+  .wheel .it {
+    height: 40px; line-height: 40px; text-align: center; scroll-snap-align: center;
+    font: 300 30px/40px var(--display); font-variant-numeric: tabular-nums; opacity: 0.4; cursor: pointer;
+  }
+  .wheel .it.on { opacity: 1; font-weight: 500; }
+  .unit { font-size: 14px; color: var(--muted); min-width: 28px; }
+  .actions { display: flex; gap: 10px; margin-top: 14px; }
+  .actions button { flex: 1; height: 52px; border-radius: 0; font-weight: 600; letter-spacing: 0.08em; }
+  .cancel { background: transparent; border: 1px solid var(--line); }
+  .ok { background: var(--btn-bg); color: var(--btn-fg); border: 0; }
+  @media (prefers-reduced-motion: reduce) { .timebtn { transition: none; } }
+</style>
+
+<main class="app" id="app">
+  <header class="top">
+    <h1 class="brand"><span class="t">t</span> ON <span class="t">t</span> OFF</h1>
+    <div class="skins" role="group" aria-label="Thème">
+      <button type="button" data-skin="sombre" aria-pressed="true">Sombre</button>
+      <button type="button" data-skin="clair" aria-pressed="false">Clair</button>
+      <button type="button" data-skin="verre" aria-pressed="false">Transparent</button>
+    </div>
+  </header>
+
+  <section class="block b1" id="blk1">
+    <button type="button" class="timebtn" id="open1">
+      <span class="label">Repos</span>
+      <span class="time" id="t1">00:30</span>
+      <span class="hint">t1 · bip grave · toucher pour régler</span>
+    </button>
+    <div class="bar"><i id="bar1"></i></div>
+  </section>
+
+  <section class="block b2" id="blk2">
+    <button type="button" class="timebtn" id="open2">
+      <span class="label">Effort</span>
+      <span class="time" id="t2">01:00</span>
+      <span class="hint">t2 · bip aigu · toucher pour régler</span>
+    </button>
+    <div class="bar"><i id="bar2"></i></div>
+  </section>
+
+  <div class="meta">
+    <div class="row">
+      <button type="button" class="total" id="open3"><span class="k">Durée totale</span><span class="v" id="t3">1h00</span></button>
+      <div class="remain" id="remain" hidden>reste <b id="remainV">0:00:00</b></div>
+    </div>
+    <div class="row">
+      <div class="modes" role="group" aria-label="Mode son">
+        <button type="button" data-mode="lock" aria-pressed="true">Écran verrouillé</button>
+        <button type="button" data-mode="mix" aria-pressed="false">Avec musique</button>
+      </div>
+    </div>
+    <p class="note" id="note" role="status"></p>
+  </div>
+
+  <button type="button" class="go" id="go">LANCER</button>
+</main>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" id="sheet">
+    <h2 id="sheetTitle">t1</h2>
+    <p id="sheetSub">Minutes et secondes</p>
+    <div class="wheels">
+      <div class="col"><div class="wheel" id="wheelA" aria-label="Première valeur"></div><span class="unit" id="unitA">min</span></div>
+      <div class="col"><div class="wheel" id="wheelB" aria-label="Seconde valeur"></div><span class="unit" id="unitB">s</span></div>
+    </div>
+    <div class="actions">
+      <button type="button" class="cancel" id="cancel">Annuler</button>
+      <button type="button" class="ok" id="ok">Valider</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var fmtMS = function (s) { return pad(Math.floor(s / 60)) + ':' + pad(s % 60); };
+  var fmtHM = function (m) { return Math.floor(m / 60) + 'h' + pad(m % 60); };
+  var fmtHMS = function (s) {
+    s = Math.max(0, Math.ceil(s));
+    return Math.floor(s / 3600) + ':' + pad(Math.floor((s % 3600) / 60)) + ':' + pad(s % 60);
+  };
+
+  /* Valeurs d'exemple, modifiables avec les roulettes */
+  var state = { t1: 30, t2: 60, t3: 60, skin: 'sombre', mode: 'lock' };
+  try {
+    var saved = JSON.parse(localStorage.getItem('tontoff-v1') || 'null');
+    if (saved) {
+      ['t1', 't2', 't3'].forEach(function (k) { if (saved[k] >= 1 && saved[k] % 1 === 0) state[k] = saved[k]; });
+      if (['sombre', 'clair', 'verre'].indexOf(saved.skin) > -1) state.skin = saved.skin;
+      if (['lock', 'mix'].indexOf(saved.mode) > -1) state.mode = saved.mode;
+    }
+  } catch (e) {}
+  function save() { try { localStorage.setItem('tontoff-v1', JSON.stringify(state)); } catch (e) {} }
+
+  var MAX_CYCLE = 1200; /* t1 + t2 : 20 min maximum dans ce prototype */
+  var running = false, startAt = 0, timer = 0, audio = null, uriCache = { key: '', uri: '' };
+
+  /* ---------- Affichage ---------- */
+  function setNote(text) { $('note').textContent = text; }
+  function modeNote() {
+    return state.mode === 'lock'
+      ? 'Le son continue écran verrouillé. Il peut mettre ta musique en pause.'
+      : 'Le son se mélange à ta musique, mais peut s’arrêter quand l’écran se verrouille.';
+  }
+  function applySkin() {
+    document.documentElement.setAttribute('data-skin', state.skin);
+    document.querySelectorAll('[data-skin]').forEach(function (b) {
+      if (b.tagName === 'BUTTON') b.setAttribute('aria-pressed', String(b.getAttribute('data-skin') === state.skin));
+    });
+  }
+  function applyMode() {
+    document.querySelectorAll('[data-mode]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-mode') === state.mode));
+    });
+  }
+  function paintIdle() {
+    $('t1').textContent = fmtMS(state.t1);
+    $('t2').textContent = fmtMS(state.t2);
+    $('t3').textContent = fmtHM(state.t3);
+    $('bar1').style.width = '0%';
+    $('bar2').style.width = '0%';
+    $('blk1').classList.remove('live');
+    $('blk2').classList.remove('live');
+    $('remain').hidden = true;
+    $('app').classList.remove('running');
+    $('go').textContent = 'LANCER';
+    ['open1', 'open2', 'open3'].forEach(function (id) { $(id).disabled = false; });
+  }
+  function paintRunning(d1, d2, live, p1, p2, left) {
+    $('t1').textContent = fmtMS(d1);
+    $('t2').textContent = fmtMS(d2);
+    $('bar1').style.width = (live === 1 ? p1 * 100 : 0) + '%';
+    $('bar2').style.width = (live === 2 ? p2 * 100 : 0) + '%';
+    $('blk1').classList.toggle('live', live === 1);
+    $('blk2').classList.toggle('live', live === 2);
+    $('remainV').textContent = fmtHMS(left);
+  }
+
+  /* ---------- Son : un cycle complet pré-rendu, joué en boucle ---------- */
+  var SR = 8000;
+  function b64(bytes) {
+    var s = '';
+    for (var i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  function cycleWav(t1, t2) {
+    /* Fichier = [bip grave][silence t1][bip aigu][silence t2].
+       Chaque bip tombe au tout début de sa phase : grave au début du repos (t1),
+       aigu au début de l'effort (t2). La boucle recommence sur le grave. */
+    var cyc = t1 + t2, n = Math.round(cyc * SR);
+    var b = new Uint8Array(44 + n), dv = new DataView(b.buffer);
+    function str(o, s) { for (var i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); }
+    str(0, 'RIFF'); dv.setUint32(4, 36 + n, true); str(8, 'WAVEfmt ');
+    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+    dv.setUint32(24, SR, true); dv.setUint32(28, SR, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
+    str(36, 'data'); dv.setUint32(40, n, true);
+    b.fill(128, 44);
+    function tone(start, dur, freq) {
+      var s0 = Math.round(start * SR), len = Math.round(dur * SR);
+      for (var i = 0; i < len; i++) {
+        var env = Math.min(1, i / 40, (len - i) / 80), ph = 2 * Math.PI * freq * i / SR;
+        /* harmoniques + saturation : onde presque carrée, pleine échelle, bien plus forte au haut-parleur */
+        var v = Math.tanh(2.6 * (Math.sin(ph) + 0.5 * Math.sin(2 * ph) + 0.33 * Math.sin(3 * ph)));
+        b[44 + s0 + i] = Math.max(0, Math.min(255, Math.round(128 + 127 * env * v)));
+      }
+    }
+    tone(0, 0.6, 294);        /* grave : début du repos */
+    tone(t1, 0.2, 2000);      /* aigu : deux impulsions, début de l'effort */
+    tone(t1 + 0.3, 0.2, 2000);
+    return b;
+  }
+  function wavUri(t1, t2) {
+    var key = t1 + '-' + t2;
+    if (uriCache.key !== key) uriCache = { key: key, uri: 'data:audio/wav;base64,' + b64(cycleWav(t1, t2)) };
+    return uriCache.uri;
+  }
+
+  /* ---------- Moteur ---------- */
+  var raf = 0;
+  var LATENCE = 0.1; /* délai de sortie du son : l'affichage bascule juste après la lecture */
+  /* Le temps écoulé vient de l'horloge audio, pour que l'affichage reste calé sur les bips.
+     L'horloge murale ne sert qu'à compter les tours de boucle. */
+  function elapsedNow() {
+    var wall = (Date.now() - startAt) / 1000, cyc = state.t1 + state.t2, c = audio ? audio.currentTime : 0;
+    return Math.max(0, c + cyc * Math.round((wall - c) / cyc) - LATENCE);
+  }
+  function tick() {
+    if (!running) return;
+    var e = elapsedNow(), total = state.t3 * 60;
+    if (e >= total) { stop(true); return; }
+    var cyc = state.t1 + state.t2, pos = e % cyc, d1 = state.t1, d2 = state.t2, live, p1 = 0, p2 = 0;
+    if (pos < state.t1) { d1 = Math.ceil(state.t1 - pos); p1 = pos / state.t1; live = 1; }
+    else { var q = pos - state.t1; d2 = Math.ceil(state.t2 - q); p2 = q / state.t2; live = 2; }
+    paintRunning(d1, d2, live, p1, p2, total - e);
+  }
+  function frame() { if (!running) return; tick(); raf = requestAnimationFrame(frame); }
+  function start() {
+    var cyc = state.t1 + state.t2;
+    if (cyc > MAX_CYCLE) { setNote('t1 + t2 ne doit pas dépasser 20 minutes dans ce prototype.'); return; }
+    try { if (navigator.audioSession) navigator.audioSession.type = state.mode === 'mix' ? 'ambient' : 'playback'; } catch (e) {}
+    if (!audio) {
+      audio = new Audio();
+      audio.loop = true;
+      audio.preload = 'auto';
+      audio.addEventListener('timeupdate', tick);
+    }
+    audio.volume = 1;
+    audio.src = wavUri(state.t1, state.t2);
+    audio.addEventListener('playing', function () { startAt = Date.now() - audio.currentTime * 1000; }, { once: true });
+    running = true;
+    startAt = Date.now();
+    var p = audio.play();
+    if (p && p.catch) p.catch(function () {
+      stop(false);
+      setNote('Le son n’a pas pu démarrer. Vérifie le volume, puis relance.');
+    });
+    try {
+      if (navigator.mediaSession) {
+        navigator.mediaSession.metadata = new MediaMetadata({ title: 't ON t OFF', artist: 'Minuteur en cours' });
+        navigator.mediaSession.setActionHandler('pause', function () { stop(false); });
+        navigator.mediaSession.setActionHandler('stop', function () { stop(false); });
+      }
+    } catch (e) {}
+    $('app').classList.add('running');
+    $('remain').hidden = false;
+    $('go').textContent = 'ARRÊTER';
+    ['open1', 'open2', 'open3'].forEach(function (id) { $(id).disabled = true; });
+    setNote(modeNote());
+    clearInterval(timer);
+    timer = setInterval(tick, 250);
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(frame);
+    tick();
+  }
+  function stop(finished) {
+    running = false;
+    clearInterval(timer);
+    cancelAnimationFrame(raf);
+    if (audio) { audio.pause(); audio.removeAttribute('src'); try { audio.load(); } catch (e) {} }
+    paintIdle();
+    setNote(finished ? 'Terminé. Durée totale écoulée.' : modeNote());
+  }
+
+  /* ---------- Roulettes ---------- */
+  var ITEM = 40, picking = null;
+  function buildWheel(el, max, value) {
+    el.innerHTML = '';
+    var top = document.createElement('div'); top.className = 'pad'; el.appendChild(top);
+    for (var i = 0; i <= max; i++) {
+      var d = document.createElement('div');
+      d.className = 'it'; d.textContent = max > 23 ? pad(i) : String(i); d.setAttribute('data-i', i);
+      el.appendChild(d);
+    }
+    var bot = document.createElement('div'); bot.className = 'pad'; el.appendChild(bot);
+    el.setAttribute('data-max', max);
+    el.style.scrollBehavior = 'auto';
+    el.scrollTop = value * ITEM;
+    mark(el);
+  }
+  function readWheel(el) {
+    var max = +el.getAttribute('data-max');
+    return Math.max(0, Math.min(max, Math.round(el.scrollTop / ITEM)));
+  }
+  function mark(el) {
+    var cur = readWheel(el);
+    el.querySelectorAll('.it').forEach(function (it) { it.classList.toggle('on', +it.getAttribute('data-i') === cur); });
+  }
+  ['wheelA', 'wheelB'].forEach(function (id) {
+    var el = $(id), raf = 0;
+    el.addEventListener('scroll', function () {
+      if (raf) return;
+      raf = requestAnimationFrame(function () { raf = 0; mark(el); });
+    });
+    el.addEventListener('click', function (ev) {
+      var it = ev.target.closest('.it');
+      if (it) { el.style.scrollBehavior = 'smooth'; el.scrollTop = +it.getAttribute('data-i') * ITEM; }
+    });
+  });
+  var CFG = {
+    t1: { title: 't1 · repos', sub: 'Minutes et secondes', c: 'var(--cool)', a: [59, 'min'], b: [59, 's'] },
+    t2: { title: 't2 · effort', sub: 'Minutes et secondes', c: 'var(--warm)', a: [59, 'min'], b: [59, 's'] },
+    t3: { title: 'Durée totale', sub: 'Heures et minutes', c: 'var(--fg)', a: [23, 'h'], b: [59, 'min'] }
+  };
+  function openPicker(kind) {
+    if (running) return;
+    var c = CFG[kind], v = state[kind];
+    picking = kind;
+    $('sheetTitle').textContent = c.title;
+    $('sheetSub').textContent = c.sub;
+    $('sheet').style.setProperty('--c', c.c);
+    $('unitA').textContent = c.a[1];
+    $('unitB').textContent = c.b[1];
+    $('scrim').hidden = false;
+    requestAnimationFrame(function () {
+      buildWheel($('wheelA'), c.a[0], Math.floor(v / 60));
+      buildWheel($('wheelB'), c.b[0], v % 60);
+    });
+    $('ok').focus();
+  }
+  function closePicker() { $('scrim').hidden = true; picking = null; }
+  function applyPicker() {
+    if (!picking) return;
+    var v = readWheel($('wheelA')) * 60 + readWheel($('wheelB'));
+    state[picking] = Math.max(1, v);
+    save(); paintIdle(); closePicker();
+  }
+
+  /* ---------- Événements ---------- */
+  $('open1').addEventListener('click', function () { openPicker('t1'); });
+  $('open2').addEventListener('click', function () { openPicker('t2'); });
+  $('open3').addEventListener('click', function () { openPicker('t3'); });
+  $('ok').addEventListener('click', applyPicker);
+  $('cancel').addEventListener('click', closePicker);
+  $('scrim').addEventListener('click', function (e) { if (e.target === $('scrim')) closePicker(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('scrim').hidden) closePicker(); });
+  $('go').addEventListener('click', function () { if (running) stop(false); else start(); });
+  document.addEventListener('visibilitychange', tick);
+  document.querySelectorAll('.skins [data-skin]').forEach(function (b) {
+    b.addEventListener('click', function () { state.skin = b.getAttribute('data-skin'); save(); applySkin(); });
+  });
+  document.querySelectorAll('.modes [data-mode]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (running) return;
+      state.mode = b.getAttribute('data-mode'); save(); applyMode(); setNote(modeNote());
+    });
+  });
+
+  applySkin(); applyMode(); paintIdle(); setNote(modeNote());
+})();
+</script>
+
+</body></html>
