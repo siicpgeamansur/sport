@@ -164,22 +164,22 @@
     </div>
   </header>
 
-  <section class="block b1" id="blk1">
-    <button type="button" class="timebtn" id="open1">
-      <span class="label">Repos</span>
-      <span class="time" id="t1">00:30</span>
-      <span class="hint">t1 · bip grave · toucher pour régler</span>
-    </button>
-    <div class="bar"><i id="bar1"></i></div>
-  </section>
-
   <section class="block b2" id="blk2">
     <button type="button" class="timebtn" id="open2">
       <span class="label">Effort</span>
       <span class="time" id="t2">01:00</span>
-      <span class="hint">t2 · bip aigu · toucher pour régler</span>
+      <span class="hint">t2 · 2 bips · toucher pour régler</span>
     </button>
     <div class="bar"><i id="bar2"></i></div>
+  </section>
+
+  <section class="block b1" id="blk1">
+    <button type="button" class="timebtn" id="open1">
+      <span class="label">Repos</span>
+      <span class="time" id="t1">00:30</span>
+      <span class="hint">t1 · 1 bip · toucher pour régler</span>
+    </button>
+    <div class="bar"><i id="bar1"></i></div>
   </section>
 
   <div class="meta">
@@ -290,9 +290,9 @@
     return btoa(s);
   }
   function cycleWav(t1, t2) {
-    /* Fichier = [bip grave][silence t1][bip aigu][silence t2].
-       Chaque bip tombe au tout début de sa phase : grave au début du repos (t1),
-       aigu au début de l'effort (t2). La boucle recommence sur le grave. */
+    /* Fichier = [1 bip][silence t1][2 bips][silence t2].
+       Chaque bip tombe au tout début de sa phase : 1 bip au début du repos (t1),
+       2 bips au début de l'effort (t2). */
     var cyc = t1 + t2, n = Math.round(cyc * SR);
     var b = new Uint8Array(44 + n), dv = new DataView(b.buffer);
     function str(o, s) { for (var i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); }
@@ -310,8 +310,8 @@
         b[44 + s0 + i] = Math.max(0, Math.min(255, Math.round(128 + 127 * env * v)));
       }
     }
-    tone(0, 0.6, 294);        /* grave : début du repos */
-    tone(t1, 0.2, 2000);      /* aigu : deux impulsions, début de l'effort */
+    tone(0, 0.25, 2000);      /* aigu : un bip au début du repos (t1) */
+    tone(t1, 0.2, 2000);      /* aigu : deux bips au début de l'effort (t2) */
     tone(t1 + 0.3, 0.2, 2000);
     return b;
   }
